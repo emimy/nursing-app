@@ -11,6 +11,8 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [signed, setSigned] = useState(false)
+  const [signing, setSigning] = useState(false)
 
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -24,10 +26,8 @@ export default function Dashboard() {
         router.push('/login')
         return
       }
-
       setUser(user)
 
-      // Load document
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(DOCUMENT_NAME)
@@ -35,7 +35,7 @@ export default function Dashboard() {
       setDocumentUrl(publicUrl)
       setLoading(false)
 
-      // Setup canvas for drawing
+      // Setup canvas
       if (canvasRef.current) {
         const canvas = canvasRef.current
         const ctx = canvas.getContext('2d')
@@ -47,7 +47,6 @@ export default function Dashboard() {
         }
       }
     }
-
     init()
   }, [router])
 
@@ -69,7 +68,6 @@ export default function Dashboard() {
 
     let x = e.clientX - rect.left
     let y = e.clientY - rect.top
-
     if (e.touches) {
       x = e.touches[0].clientX - rect.left
       y = e.touches[0].clientY - rect.top
@@ -85,13 +83,41 @@ export default function Dashboard() {
     }
   }
 
-  const handleSign = () => {
-    alert(`✅ Document signed successfully by ${user?.email || 'User'}!`)
-    clearSignature()
+  const handleSign = async () => {
+    if (!ctxRef.current || !canvasRef.current) return
+
+    setSigning(true)
+
+    // Simulate saving the signature (we can improve this later)
+    setTimeout(() => {
+      setSigned(true)
+      setSigning(false)
+    }, 800)
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-xl">Loading your document...</div>
+    return <div className="min-h-screen flex items-center justify-center text-xl">Loading document...</div>
+  }
+
+  if (signed) {
+    return (
+      <div className="min-h-screen bg-green-50 flex items-center justify-center">
+        <div className="bg-white rounded-3xl shadow-xl p-12 max-w-md text-center">
+          <div className="text-6xl mb-6">✅</div>
+          <h1 className="text-3xl font-bold text-green-700 mb-4">Document Signed Successfully!</h1>
+          <p className="text-gray-600 mb-8">
+            You have successfully signed the Nursing General Competencies 2026 document.<br />
+            Signed on {new Date().toLocaleDateString()}
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -116,11 +142,11 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Document Preview */}
           <div className="bg-white rounded-3xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold mb-6">Document Preview</h2>
+            <h2 className="text-2xl font-semibold mb-6">Review Document</h2>
             {documentUrl ? (
               <iframe
                 src={documentUrl}
-                className="w-full h-[680px] border rounded-2xl"
+                className="w-full h-[700px] border rounded-2xl"
                 title="Nursing Competencies"
               />
             ) : (
@@ -128,25 +154,28 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Signature Area */}
+          {/* Signature Section - DocuSign style */}
           <div className="bg-white rounded-3xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold mb-6">Draw Your Signature</h2>
-            
-            <canvas
-              ref={canvasRef}
-              width={620}
-              height={300}
-              className="border border-gray-300 rounded-2xl bg-white touch-none"
-              onMouseDown={startDrawing}
-              onMouseUp={stopDrawing}
-              onMouseMove={draw}
-              onMouseLeave={stopDrawing}
-              onTouchStart={startDrawing}
-              onTouchEnd={stopDrawing}
-              onTouchMove={draw}
-            />
+            <h2 className="text-2xl font-semibold mb-2">Sign the Document</h2>
+            <p className="text-gray-600 mb-6">Draw your signature below to complete the process</p>
 
-            <div className="flex gap-4 mt-6">
+            <div className="border-2 border-gray-300 rounded-2xl overflow-hidden bg-white mb-6">
+              <canvas
+                ref={canvasRef}
+                width={620}
+                height={280}
+                className="w-full touch-none"
+                onMouseDown={startDrawing}
+                onMouseUp={stopDrawing}
+                onMouseMove={draw}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchEnd={stopDrawing}
+                onTouchMove={draw}
+              />
+            </div>
+
+            <div className="flex gap-4">
               <button
                 onClick={clearSignature}
                 className="flex-1 py-3.5 border border-gray-400 rounded-2xl hover:bg-gray-100 font-medium"
@@ -155,11 +184,16 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={handleSign}
-                className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-medium"
+                disabled={signing}
+                className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-medium disabled:opacity-50"
               >
-                Sign Document
+                {signing ? 'Signing...' : 'Complete Signing'}
               </button>
             </div>
+
+            <p className="text-xs text-gray-500 text-center mt-6">
+              By signing, you confirm that you have read and agree to the document above.
+            </p>
           </div>
         </div>
       </div>
