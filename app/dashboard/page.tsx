@@ -11,7 +11,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [signing, setSigning] = useState(false)
 
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -25,8 +24,10 @@ export default function Dashboard() {
         router.push('/login')
         return
       }
+
       setUser(user)
 
+      // Load document
       const { data: { publicUrl } } = supabase.storage
         .from('documents')
         .getPublicUrl(DOCUMENT_NAME)
@@ -34,14 +35,14 @@ export default function Dashboard() {
       setDocumentUrl(publicUrl)
       setLoading(false)
 
-      // Simple canvas setup
+      // Setup canvas for drawing
       if (canvasRef.current) {
         const canvas = canvasRef.current
         const ctx = canvas.getContext('2d')
         if (ctx) {
-          ctx.lineWidth = 3
+          ctx.lineWidth = 4
           ctx.lineCap = 'round'
-          ctx.strokeStyle = '#000000'
+          ctx.strokeStyle = '#000'
           ctxRef.current = ctx
         }
       }
@@ -50,7 +51,7 @@ export default function Dashboard() {
     init()
   }, [router])
 
-  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+  const startDrawing = (e: any) => {
     isDrawing.current = true
     draw(e)
   }
@@ -59,20 +60,19 @@ export default function Dashboard() {
     isDrawing.current = false
   }
 
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+  const draw = (e: any) => {
     if (!isDrawing.current || !ctxRef.current || !canvasRef.current) return
 
     const canvas = canvasRef.current
     const ctx = ctxRef.current
     const rect = canvas.getBoundingClientRect()
 
-    let x, y
-    if ('touches' in e) {
+    let x = e.clientX - rect.left
+    let y = e.clientY - rect.top
+
+    if (e.touches) {
       x = e.touches[0].clientX - rect.left
       y = e.touches[0].clientY - rect.top
-    } else {
-      x = (e as React.MouseEvent).clientX - rect.left
-      y = (e as React.MouseEvent).clientY - rect.top
     }
 
     ctx.lineTo(x, y)
@@ -86,12 +86,13 @@ export default function Dashboard() {
   }
 
   const handleSign = () => {
-    if (!ctxRef.current) return
-    alert(`✅ Document signed successfully by ${user?.email}!`)
+    alert(`✅ Document signed successfully by ${user?.email || 'User'}!`)
     clearSignature()
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-xl">Loading...</div>
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-xl">Loading your document...</div>
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -113,26 +114,29 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Document Preview */}
           <div className="bg-white rounded-3xl shadow-lg p-8">
             <h2 className="text-2xl font-semibold mb-6">Document Preview</h2>
             {documentUrl ? (
               <iframe
                 src={documentUrl}
                 className="w-full h-[680px] border rounded-2xl"
-                title="Document"
+                title="Nursing Competencies"
               />
             ) : (
               <p className="text-red-500">Could not load document</p>
             )}
           </div>
 
+          {/* Signature Area */}
           <div className="bg-white rounded-3xl shadow-lg p-8">
             <h2 className="text-2xl font-semibold mb-6">Draw Your Signature</h2>
+            
             <canvas
               ref={canvasRef}
               width={620}
               height={300}
-              className="border border-gray-300 rounded-2xl touch-none bg-white"
+              className="border border-gray-300 rounded-2xl bg-white touch-none"
               onMouseDown={startDrawing}
               onMouseUp={stopDrawing}
               onMouseMove={draw}
@@ -141,16 +145,17 @@ export default function Dashboard() {
               onTouchEnd={stopDrawing}
               onTouchMove={draw}
             />
+
             <div className="flex gap-4 mt-6">
               <button
                 onClick={clearSignature}
-                className="flex-1 py-3.5 border border-gray-400 rounded-2xl hover:bg-gray-100"
+                className="flex-1 py-3.5 border border-gray-400 rounded-2xl hover:bg-gray-100 font-medium"
               >
-                Clear
+                Clear Signature
               </button>
               <button
                 onClick={handleSign}
-                className="flex-1 py-3.5 bg-green-600 text-white rounded-2xl hover:bg-green-700"
+                className="flex-1 py-3.5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-medium"
               >
                 Sign Document
               </button>
