@@ -9,7 +9,6 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -17,87 +16,56 @@ export default function Login() {
     setLoading(true)
     setError('')
 
-    try {
-      // Clean nurse ID input
-      const cleanedId = nurseId.trim()
+    const cleanedId = nurseId.trim()
+    const email = `jhn.nursing.department+${cleanedId}@gmail.com`
 
-      // Build hidden email
-      const email = `jhn.nursing.department+${cleanedId}@gmail.com`
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setError('Invalid credentials')
-        setLoading(false)
-        return
-      }
-
-      // Success → redirect
-      router.push('/dashboard')
-
-    } catch (err) {
-      console.error('Login error:', err)
-      setError('Something went wrong. Please try again.')
+    if (authError) {
+      setError('Invalid Nurse ID or password')
       setLoading(false)
+      return
     }
+
+    // Success → go to dashboard
+    router.push('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-md">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Nursing Competencies 2026</h1>
         
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            Nursing Competencies 2026
-          </h1>
-          <p className="text-gray-600">
-            Sign in with your Nurse ID
-          </p>
-        </div>
-
         <form onSubmit={handleLogin} className="space-y-6">
-          
-          {/* Nurse ID */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Nurse ID
-            </label>
+            <label className="block text-sm font-medium mb-2">Nurse ID</label>
             <input
               type="text"
               value={nurseId}
               onChange={(e) => setNurseId(e.target.value)}
-              className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
               placeholder="e.g. 3822293"
               required
             />
           </div>
 
-          {/* Password */}
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Password
-            </label>
+            <label className="block text-sm font-medium mb-2">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
               placeholder="Enter your password"
               required
             />
           </div>
 
-          {/* Error message */}
-          {error && (
-            <p className="text-red-500 text-sm text-center">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-          {/* Submit button */}
           <button
             type="submit"
             disabled={loading}
