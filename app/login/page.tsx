@@ -18,23 +18,29 @@ export default function Login() {
     setLoading(true)
     setError('')
 
+    // Get the real email from the nurses table using Nurse ID
     const { data, error: dbError } = await supabase
       .from('nurses')
-      .select('hashed_password')
+      .select('email')
       .eq('nurse_id', nurseId.trim())
       .single()
 
-    if (dbError || !data) {
+    if (dbError || !data || !data.email) {
       setError('Invalid Nurse ID')
       setLoading(false)
       return
     }
 
-    if (data.hashed_password === password) {
-      // Force redirect - more reliable on Vercel
-      window.location.href = '/dashboard'
-    } else {
+    // Login using Supabase Auth with the email from database
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: password,
+    })
+
+    if (authError) {
       setError('Incorrect password')
+    } else {
+      router.push('/dashboard')
     }
 
     setLoading(false)
