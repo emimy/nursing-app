@@ -13,8 +13,7 @@ export default function Login() {
 
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()   // ← This stops the page from refreshing
+  const handleLogin = async () => {
     setLoading(true)
     setError('')
 
@@ -47,7 +46,7 @@ export default function Login() {
           <p className="text-gray-600">Sign in with your Nurse ID</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium mb-2">Nurse ID</label>
             <input
@@ -56,7 +55,6 @@ export default function Login() {
               onChange={(e) => setNurseId(e.target.value)}
               className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-blue-500"
               placeholder="e.g. 3822293"
-              required
             />
           </div>
 
@@ -68,20 +66,19 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:border-blue-500"
               placeholder="Enter your password"
-              required
             />
           </div>
 
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
-            type="submit"
+            onClick={handleLogin}
             disabled={loading}
             className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl disabled:opacity-50"
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
-        </form>
+        </div>
 
         <p className="text-center text-xs text-gray-500 mt-8">
           Contact your administrator if you forgot your password
