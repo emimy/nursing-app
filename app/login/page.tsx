@@ -37,12 +37,12 @@ export default function Login() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         
-        {/* FABULOUS CAT HEADER */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 flex justify-center">
+        {/* FABULOUS CAT HEADER - RESIZED FOR MOBILE */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 sm:p-8 flex justify-center">
           <img 
             src="/fabulous-cat.jpg" 
             alt="Fabulous Cat" 
-            className="w-48 h-48 object-contain drop-shadow-2xl"
+            className="w-40 h-40 sm:w-48 sm:h-48 object-contain drop-shadow-2xl mx-auto"
           />
         </div>
 
