@@ -14,7 +14,7 @@ export default function Login() {
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()          // ← This stops the page refresh
+    e.preventDefault()   // ← This stops the page from refreshing
     setLoading(true)
     setError('')
 
@@ -31,7 +31,7 @@ export default function Login() {
     }
 
     if (data.hashed_password === password) {
-      router.push('/dashboard')     // Redirect to dashboard
+      router.push('/dashboard')
     } else {
       setError('Incorrect password')
     }
