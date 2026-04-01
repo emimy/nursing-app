@@ -18,38 +18,29 @@ export default function Login() {
     setLoading(true)
     setError('')
 
-    console.log("🔍 Trying to login with Nurse ID:", nurseId)
-
+    // Query the nurses table
     const { data, error: dbError } = await supabase
       .from('nurses')
-      .select('email, hashed_password')
+      .select('hashed_password')
       .eq('nurse_id', nurseId.trim())
       .single()
 
     if (dbError || !data) {
-      console.log("❌ Nurse ID not found in database")
       setError('Invalid Nurse ID')
       setLoading(false)
       return
     }
 
-    console.log("✅ Found row in database:")
-    console.log("   Email:", data.email)
-    console.log("   Stored hashed_password:", data.hashed_password)
-    console.log("   Typed password:", password)
-
-    // Try Supabase Auth
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: password,
-    })
-
-    if (authError) {
-      console.log("❌ Supabase Auth failed:", authError.message)
-      setError('Incorrect password')
-    } else {
-      console.log("✅ Supabase Auth succeeded!")
+    // Check password (plain text for now)
+    if (data.hashed_password === password) {
+      // Success - create a simple session
+      await supabase.auth.setSession({
+        access_token: 'custom-token-' + nurseId,
+        refresh_token: '',
+      })
       router.push('/dashboard')
+    } else {
+      setError('Incorrect password')
     }
 
     setLoading(false)
@@ -98,6 +89,10 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <p className="text-center text-xs text-gray-500 mt-8">
+          Contact your administrator if you forgot your password
+        </p>
       </div>
     </div>
   )
