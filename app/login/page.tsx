@@ -1,4 +1,3 @@
-// app/login/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -18,45 +17,43 @@ export default function Login() {
     setLoading(true)
     setError('')
 
-    // Query the nurses table
-    const { data, error: dbError } = await supabase
-      .from('nurses')
-      .select('hashed_password')
-      .eq('nurse_id', nurseId.trim())
-      .single()
+    // Construct email from nurse ID
+    const email = `jhn.nursing.department+${nurseId.trim()}@gmail.com`
 
-    if (dbError || !data) {
-      setError('Invalid Nurse ID')
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError('Invalid Nurse ID or password')
       setLoading(false)
       return
     }
 
-    // Check password (plain text for now)
-    if (data.hashed_password === password) {
-      // Success - create a simple session
-      await supabase.auth.setSession({
-        access_token: 'custom-token-' + nurseId,
-        refresh_token: '',
-      })
-      router.push('/dashboard')
-    } else {
-      setError('Incorrect password')
-    }
-
-    setLoading(false)
+    // Success
+    router.push('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-md">
+        
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Nursing Competencies 2026</h1>
-          <p className="text-gray-600">Sign in with your Nurse ID</p>
+          <h1 className="text-3xl font-bold mb-2">
+            Nursing Competencies 2026
+          </h1>
+          <p className="text-gray-600">
+            Sign in with your Nurse ID
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
+          
           <div>
-            <label className="block text-sm font-medium mb-2">Nurse ID</label>
+            <label className="block text-sm font-medium mb-2">
+              Nurse ID
+            </label>
             <input
               type="text"
               value={nurseId}
@@ -68,7 +65,9 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
+            <label className="block text-sm font-medium mb-2">
+              Password
+            </label>
             <input
               type="password"
               value={password}
@@ -79,14 +78,18 @@ export default function Login() {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-sm text-center">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
