@@ -4,18 +4,26 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 
-const DOCUMENT_NAME = "Nursing General Competencies 2026-compressed.pdf"
+const DOCUMENT_NAME = "fire-electrical-radiation-safety.pdf"
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const [documentUrl, setDocumentUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null)
 
   const router = useRouter()
 
-  // Initialize user and document URL
+  // Your nurse details (change these when testing different nurses)
+  const nurseData = {
+    name: "Lamees Almansour",
+    nurseId: "3837830",
+    department: "Nursing Services"
+  }
+
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -35,19 +43,72 @@ export default function Dashboard() {
     init()
   }, [router])
 
+  // Create filled PDF with auto-filled fields + signature
+  const createFilledPdf = async (signatureDataUrl: string) => {
+    try {
+      // ✅ Use download() instead of fetch — this is the fix
+      const { data: fileData, error } = await supabase.storage
+        .from('documents')
+        .download(DOCUMENT_NAME)
+
+      if (error || !fileData) throw error || new Error("Failed to download PDF")
+
+      const pdfDoc = await PDFDocument.load(fileData)
+      const pages = pdfDoc.getPages()
+      const firstPage = pages[0]
+
+      const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+
+      // Fill top fields
+      firstPage.drawText(nurseData.name, { x: 180, y: 620, size: 14, font })
+      firstPage.drawText(nurseData.nurseId, { x: 380, y: 620, size: 14, font })
+      firstPage.drawText(nurseData.department, { x: 580, y: 620, size: 14, font })
+
+      // Add signature image at the bottom
+      const signatureImage = await pdfDoc.embedPng(signatureDataUrl.split(',')[1])
+      firstPage.drawImage(signatureImage, {
+        x: 420,
+        y: 80,
+        width: 180,
+        height: 80,
+      })
+
+      const filledPdfBytes = await pdfDoc.save()
+
+      // Upload the signed version
+      const fileName = `signed/${nurseData.nurseId}-${Date.now()}.pdf`
+      await supabase.storage.from('documents').upload(fileName, filledPdfBytes, {
+        contentType: 'application/pdf',
+      })
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName)
+
+      return publicUrl
+    } catch (err: any) {
+      console.error("PDF processing error:", err)
+      alert("Failed to create signed PDF: " + err.message)
+      return null
+    }
+  }
+
   // Listen for signature from popup
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'SIGNED') {
-        console.log('Signature Data URL:', event.data.data)
-        setShowSuccess(true)
+        const signatureDataUrl = event.data.data
+        const filledUrl = await createFilledPdf(signatureDataUrl)
+        if (filledUrl) {
+          setSignedPdfUrl(filledUrl)
+          setShowSuccess(true)
+        }
       }
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [])
 
-  // Open a responsive signature popup
   const openSignaturePopup = () => {
     if (!documentUrl) return alert('Document not loaded yet.')
 
@@ -72,8 +133,8 @@ export default function Dashboard() {
           <style>
             body { margin:0; display:flex; flex-direction:column; align-items:center; font-family:sans-serif; background:#f0f0f0; }
             h2 { margin:16px 0; text-align:center; }
-            iframe { width:95%; height:50%; border:1px solid #ccc; border-radius:12px; margin-bottom:16px; }
-            canvas { width:95%; max-width:700px; border:2px solid #444; border-radius:12px; touch-action:none; }
+            iframe { width:95%; height:48%; border:1px solid #ccc; border-radius:12px; margin-bottom:16px; }
+            canvas { width:95%; max-width:700px; border:2px solid #444; border-radius:12px; touch-action:none; background:white; }
             button { margin:10px; padding:12px 24px; font-size:18px; border-radius:12px; cursor:pointer; }
           </style>
         </head>
@@ -93,16 +154,11 @@ export default function Dashboard() {
             ctx.lineJoin = 'round'
             ctx.strokeStyle = '#1f2937'
             let drawing = false
-            let savedData = null
 
             const resizeCanvas = () => {
-              if (!canvas) return
-              if (ctx && canvas.width && canvas.height) savedData = ctx.getImageData(0,0,canvas.width,canvas.height)
               canvas.width = canvas.offsetWidth
-              canvas.height = Math.max(350, window.innerHeight * 0.45)
-              if (savedData && ctx) ctx.putImageData(savedData,0,0)
+              canvas.height = 320
             }
-
             window.addEventListener('resize', resizeCanvas)
             window.addEventListener('orientationchange', resizeCanvas)
             resizeCanvas()
@@ -115,14 +171,29 @@ export default function Dashboard() {
               return {x, y}
             }
 
-            canvas.addEventListener('mousedown', () => drawing=true)
-            canvas.addEventListener('mouseup', () => drawing=false)
-            canvas.addEventListener('mousemove', e => { if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y) })
-            canvas.addEventListener('mouseleave', () => drawing=false)
+            canvas.addEventListener('mousedown', () => drawing = true)
+            canvas.addEventListener('mouseup', () => drawing = false)
+            canvas.addEventListener('mousemove', e => { 
+              if(!drawing) return; 
+              const p = getPos(e); 
+              ctx.lineTo(p.x, p.y); 
+              ctx.stroke(); 
+              ctx.beginPath(); 
+              ctx.moveTo(p.x, p.y) 
+            })
+            canvas.addEventListener('mouseleave', () => drawing = false)
 
-            canvas.addEventListener('touchstart', () => drawing=true)
-            canvas.addEventListener('touchend', () => drawing=false)
-            canvas.addEventListener('touchmove', e => { if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault() })
+            canvas.addEventListener('touchstart', () => drawing = true)
+            canvas.addEventListener('touchend', () => drawing = false)
+            canvas.addEventListener('touchmove', e => { 
+              if(!drawing) return; 
+              const p = getPos(e); 
+              ctx.lineTo(p.x, p.y); 
+              ctx.stroke(); 
+              ctx.beginPath(); 
+              ctx.moveTo(p.x, p.y); 
+              e.preventDefault() 
+            })
 
             document.getElementById('clear').onclick = () => ctx.clearRect(0,0,canvas.width,canvas.height)
             document.getElementById('complete').onclick = () => {
@@ -142,8 +213,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Nursing General Competencies 2026</h1>
           <button
@@ -157,15 +227,13 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Document Viewer */}
           <div className="bg-white rounded-3xl shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Review Document</h2>
             {documentUrl ? (
               <iframe
                 src={documentUrl}
-                className="w-full h-[520px] md:h-[680px] border rounded-2xl"
+                className="w-full h-[920px] border rounded-2xl"
                 title="Document"
               />
             ) : (
@@ -173,7 +241,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Signature Panel */}
           <div className="bg-white rounded-3xl shadow-lg p-12 flex flex-col items-center justify-center">
             <div className="text-center mb-10">
               <div className="text-6xl mb-6">✍️</div>
@@ -191,21 +258,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Success Popup */}
-      {showSuccess && (
-        <div className="fixed inset-0 bg-black/50 z-[300] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md text-center">
-            <div className="text-7xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-green-700 mb-2">Signed Successfully!</h2>
-            <p className="text-gray-600 mb-6">
-              You have completed signing the document.<br/>
-              Signed on {new Date().toLocaleDateString()}
-            </p>
+      {/* Success Screen */}
+      {showSuccess && signedPdfUrl && (
+        <div className="fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md text-center">
+            <div className="text-7xl mb-6">✅</div>
+            <h2 className="text-3xl font-bold text-green-700 mb-4">Document Signed & Filled!</h2>
+            <p className="text-gray-600 mb-8">Your details and signature have been added automatically.</p>
+
+            <a
+              href={signedPdfUrl}
+              target="_blank"
+              className="block w-full py-4 bg-green-600 text-white rounded-2xl font-medium mb-4 hover:bg-green-700"
+            >
+              📥 Download Signed PDF
+            </a>
+
             <button
               onClick={() => setShowSuccess(false)}
-              className="w-full py-3 bg-green-600 text-white rounded-2xl font-medium hover:bg-green-700"
+              className="w-full py-4 border border-gray-400 rounded-2xl font-medium"
             >
-              Close
+              Continue
             </button>
           </div>
         </div>
