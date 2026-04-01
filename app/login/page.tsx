@@ -14,14 +14,13 @@ export default function Login() {
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault()          // ← This stops the page refresh
     setLoading(true)
     setError('')
 
-    // Query the nurses table
     const { data, error: dbError } = await supabase
       .from('nurses')
-      .select('staff_name, hashed_password')
+      .select('hashed_password')
       .eq('nurse_id', nurseId.trim())
       .single()
 
@@ -31,10 +30,8 @@ export default function Login() {
       return
     }
 
-    // Check password (plain text for now)
     if (data.hashed_password === password) {
-      // Login successful
-      router.push('/dashboard')
+      router.push('/dashboard')     // Redirect to dashboard
     } else {
       setError('Incorrect password')
     }
