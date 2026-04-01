@@ -17,22 +17,32 @@ export default function Login() {
     setLoading(true)
     setError('')
 
-    // Construct email from nurse ID
-    const email = `jhn.nursing.department+${nurseId.trim()}@gmail.com`
+    try {
+      // Clean nurse ID input
+      const cleanedId = nurseId.trim()
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+      // Build hidden email
+      const email = `jhn.nursing.department+${cleanedId}@gmail.com`
 
-    if (error) {
-      setError('Invalid Nurse ID or password')
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError('Invalid credentials')
+        setLoading(false)
+        return
+      }
+
+      // Success → redirect
+      router.push('/dashboard')
+
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Something went wrong. Please try again.')
       setLoading(false)
-      return
     }
-
-    // Success
-    router.push('/dashboard')
   }
 
   return (
@@ -50,6 +60,7 @@ export default function Login() {
 
         <form onSubmit={handleLogin} className="space-y-6">
           
+          {/* Nurse ID */}
           <div>
             <label className="block text-sm font-medium mb-2">
               Nurse ID
@@ -64,6 +75,7 @@ export default function Login() {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label className="block text-sm font-medium mb-2">
               Password
@@ -78,12 +90,14 @@ export default function Login() {
             />
           </div>
 
+          {/* Error message */}
           {error && (
             <p className="text-red-500 text-sm text-center">
               {error}
             </p>
           )}
 
+          {/* Submit button */}
           <button
             type="submit"
             disabled={loading}
