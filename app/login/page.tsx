@@ -30,54 +30,67 @@ export default function Login() {
       return
     }
 
-    // Success → go to dashboard
     router.push('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Nursing Competencies 2026</h1>
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
         
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium mb-2">Nurse ID</label>
-            <input
-              type="text"
-              value={nurseId}
-              onChange={(e) => setNurseId(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
-              placeholder="e.g. 3822293"
-              required
-            />
-          </div>
+        {/* FABULOUS CAT HEADER */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 flex justify-center">
+          <img 
+            src="/fabulous-cat.jpg" 
+            alt="Fabulous Cat" 
+            className="w-48 h-48 object-contain drop-shadow-2xl"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+        <div className="p-8">
+          <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
+            Nursing Competencies 2026
+          </h1>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">Nurse ID</label>
+              <input
+                type="text"
+                value={nurseId}
+                onChange={(e) => setNurseId(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
+                placeholder="e.g. 3822293"
+                required
+              />
+            </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <div>
+              <label className="block text-sm font-medium mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl disabled:opacity-50"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-        <p className="text-center text-xs text-gray-500 mt-8">
-          Contact your administrator if you forgot your password
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-2xl disabled:opacity-50 transition"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-gray-500 mt-8">
+            Contact your administrator if you forgot your password
+          </p>
+        </div>
       </div>
     </div>
   )
